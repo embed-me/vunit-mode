@@ -23,9 +23,9 @@
 
 ;;; Commentary:
 
-;; A trivial minor mode for VUnit which hooks to the VHDL major mode
-;; and interfaces with a VUnit run script by making use of
-;; the compile package inside Emacs.
+;; A trivial global minor mode for VUnit which hooks to the
+;; VHDL major mode and interfaces with a VUnit run script by
+;; making use of the compile package inside Emacs.
 
 ;; The basic requirements are that the HDL simulator is in the
 ;; path and that VUnit is installed in the python environment.
@@ -182,7 +182,7 @@
 
 (defun vunit--flag-to-string ()
   "Return string representation of list."
-  (mapconcat 'identity vunit-flags " "))
+  (mapconcat #'identity vunit-flags " "))
 
 (defun vunit--flag-enabled (flag)
   "Return t if `FLAG' is set, nil otherwise."
@@ -199,10 +199,18 @@
 ;;;###autoload
 (define-minor-mode vunit-mode
   "Minor Mode to interface with VUnit script."
-  :global nil
+  :global t
   :group 'vunit
   :lighter " VUnit"
   :keymap vunit-mode-map)
+
+;;;###autoload
+(define-globalized-minor-mode vunit-global-mode vunit-mode vunit--turn-on)
+
+;;;###autoload
+(defun vunit--turn-on ()
+  "Bind the `vunit-mode' to the `vhdl-mode'."
+  (when (derived-mode-p 'vhdl-mode) (vunit-mode 1)))
 
 ;;;###autoload
 (defhydra vunit-buffer-menu
@@ -232,9 +240,6 @@ _x_: Clean             ^ ^              _t_: Cursor         _p_: Fail-Fast
   ("e" (vunit-toggle-flag "--keep-compiling") nil :color pink)
   ("p" (vunit-toggle-flag "--fail-fast") nil :color pink)
   ("d" (vunit-toggle-flag "--log-level debug") nil :color pink))
-
-;;;###autoload
-(add-hook 'vhdl-mode-hook #'vunit-mode)
 
 (provide 'vunit-mode)
 
