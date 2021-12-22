@@ -27,9 +27,10 @@
 
 ;;; Code:
 
-(require 'vunit-mode)
 (require 'ert)
 (require 'ert-x)
+(require 'vunit-mode)
+(require 'hydra)
 
 (ert-deftest vunit-flags-check ()
   (should (equal vunit-flags '()))
