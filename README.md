@@ -1,4 +1,4 @@
-# VUnit Mode [![check][check-badge]][check-link]
+# VUnit Mode [![check][check-badge]][check-link] [![melpa badge][melpa-badge]][melpa-link]
 
 This is a package for GNU Emacs that can be used to interface with
 [VUnit](https://vunit.github.io/) which is an open-source testing
@@ -24,7 +24,20 @@ is in the path and that VUnit is installed in the python environment.
 
 ### MELPA
 
-Currently, the mode is not available from [MELPA](https://melpa.org/).
+The preferred installation method is through [MELPA](https://melpa.org/).
+
+Add MELPA in your `~/.emacs` or `~/.emacs.d/init.el` init file.
+
+```elisp
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+```
+
+Then install the package
+
+```elisp
+M-x package-refresh-contents RET
+M-x package-install RET vunit-mode RET
+```
 
 ### Manual
 
@@ -76,3 +89,5 @@ in elisp publish the code written so far.
 
 [check-link]: https://github.com/embed-me/vunit-mode/actions
 [check-badge]: https://github.com/embed-me/vunit-mode/actions/workflows/github-actions-ci.yml/badge.svg
+[melpa-link]: https://melpa.org/#/vunit-mode
+[melpa-badge]: https://melpa.org/packages/vunit-mode-badge.svg
