@@ -1,4 +1,4 @@
-# VUnit Mode
+# VUnit Mode [![check][check-badge]][check-link]
 
 This is a package for GNU Emacs that can be used to interface with
 [VUnit](https://vunit.github.io/) which is an open-source testing
@@ -72,3 +72,7 @@ already discussed online a couple of years ago, however,
 for me, Markus Pfaff from FH-Hagenberg was the one who inspired me to
 take the implementation into my own hands and despite my lack of knowledge
 in elisp publish the code written so far.
+
+
+[check-link]: https://github.com/embed-me/vunit-mode/actions
+[check-badge]: https://github.com/embed-me/vunit-mode/actions/workflows/github-actions-ci.yml/badge.svg
