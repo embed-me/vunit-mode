@@ -1,4 +1,4 @@
-# VUnit Mode [![melpa badge][melpa-badge]][melpa-link]
+# VUnit Mode [![check][check-badge]][check-link] [![melpa badge][melpa-badge]][melpa-link]
 
 This is a package for GNU Emacs that can be used to interface with
 [VUnit](https://vunit.github.io/) which is an open-source testing
@@ -87,5 +87,7 @@ take the implementation into my own hands and despite my lack of knowledge
 in elisp publish the code written so far.
 
 
+[check-link]: https://github.com/embed-me/vunit-mode/actions
+[check-badge]: https://github.com/embed-me/vunit-mode/actions/workflows/github-actions-ci.yml/badge.svg
 [melpa-link]: https://melpa.org/#/vunit-mode
 [melpa-badge]: https://melpa.org/packages/vunit-mode-badge.svg
