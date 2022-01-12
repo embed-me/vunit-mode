@@ -38,6 +38,11 @@
 ;; is also user configurable.  For a full list of available
 ;; configurations run "M-x customize" and search for vunit.
 
+;; Keys highlighted in blue will execute the specified action and
+;; quit the vunit-mode command window.
+;; The ones marked in red, however, will add additional flags
+;; to the actions available in blue.
+
 ;; The default keybinding to invoke vunit-mode is "C-x x".
 
 ;;; Code:
@@ -76,6 +81,17 @@
   :group 'vunit
   :type 'integer)
 
+;; Create a "special" variable so that it is dynamically
+;; bound (even if `lexical-binding' is t)
+(defvar compilation-scroll-output)
+(defcustom vunit-auto-scroll t
+  "Auto-scroll to bottom in the compile buffer."
+  :group 'vunit
+  :type 'boolean
+  :set #'(lambda (symbol value)
+           (set-default symbol value)
+           (setq compilation-scroll-output value)))
+
 ;;; internal variables
 
 (defvar vunit-mode-map
@@ -86,6 +102,8 @@
 
 (defvar vunit-flags '()
   "Additional flags for the python script.")
+
+;;; internal functions
 
 (defun vunit-open-script ()
   "Open vunit script."
@@ -199,18 +217,19 @@
 ;;;###autoload
 (define-minor-mode vunit-mode
   "Minor Mode to interface with VUnit script."
-  :global t
   :group 'vunit
   :lighter " VUnit"
   :keymap vunit-mode-map)
 
 ;;;###autoload
-(define-globalized-minor-mode vunit-global-mode vunit-mode vunit--turn-on)
+(define-globalized-minor-mode global-vunit-mode
+  vunit-mode vunit--turn-on)
 
 ;;;###autoload
 (defun vunit--turn-on ()
-  "Bind the `vunit-mode' to the `vhdl-mode'."
-  (when (derived-mode-p 'vhdl-mode) (vunit-mode 1)))
+  "Bind the variable `vunit-mode' to the `vhdl-mode'."
+  (when (derived-mode-p 'vhdl-mode)
+    (vunit-mode 1)))
 
 ;;;###autoload
 (defhydra vunit-buffer-menu

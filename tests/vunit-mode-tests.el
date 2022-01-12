@@ -50,6 +50,12 @@
   (should (equal (vunit--regex-testcase "whatever (\"foo\")") nil))
   (should (equal (vunit--regex-testcase "whatever some more") nil)))
 
+(ert-deftest vunit-auto-scroll-check ()
+  (custom-set-variables '(vunit-auto-scroll nil))
+  (should (equal compilation-scroll-output nil))
+  (custom-set-variables '(vunit-auto-scroll t))
+  (should (equal compilation-scroll-output t)))
+
 (provide 'vunit-mode-tests)
 
 ;;; vunit-mode-tests.el ends here

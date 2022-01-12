@@ -39,6 +39,13 @@ M-x package-refresh-contents RET
 M-x package-install RET vunit-mode RET
 ```
 
+Finally enable the mode in your init file.
+
+```elisp
+(require 'vunit-mode)
+(global-vunit-mode t)
+```
+
 ### Manual
 
 To manually install the package, clone this repository and add the
@@ -47,7 +54,17 @@ following in your `~/.emacs` or `~/.emacs.d/init.el` init file.
 ```elisp
 (add-to-list 'load-path "/path-to-repository/")
 (require 'vunit-mode)
+(global-vunit-mode t)
 ```
+
+## Usage
+
+The default keybinding to invoke vunit-mode is "C-x x".
+
+Keys highlighted in blue will execute the specified action and
+quit the vunit-mode command window.
+The ones marked in red, however, will add additional flags
+to the actions available in blue.
 
 ## Configuration
 
@@ -67,6 +84,9 @@ Name of the python script to run.
 
 Number of threads to use in parallel.
 > vunit-num-threads
+
+Auto-scroll to bottom in the compile buffer.
+> vunit-auto-scroll
 
 ## Contributing
 
