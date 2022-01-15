@@ -103,6 +103,9 @@
 (defvar vunit-flags '()
   "Additional flags for the python script.")
 
+(defconst vunit--regex-testcase "run\s*(\"\\([^\"]*\\)\")"
+  "Regular expression for testcases.")
+
 ;;; internal functions
 
 (defun vunit-open-script ()
@@ -150,10 +153,11 @@
   (interactive)
   (with-current-buffer (buffer-name)
     (save-excursion
-      (let ((linestring (thing-at-point 'line t)))
-        (if (vunit--regex-testcase linestring)
-            (vunit--run (format "*.%s" (match-string 1 linestring)))
-          (message "No testcase..."))))))
+      (if (not (vunit--match-line))
+          (re-search-backward vunit--regex-testcase nil 'noerror))
+      (if (vunit--match-line)
+          (vunit--run (format "*.%s" (vunit--match-line)))
+        (message "No testcase...")))))
 
 (defun vunit--run (param)
   "Run VUnit python script with `PARAM'."
@@ -182,9 +186,11 @@
   (interactive)
   (setq vunit-path (read-directory-name "Select VUnit Path: ")))
 
-(defun vunit--regex-testcase (linestring)
-  "Regex for a testcase in `LINESTRING'."
-  (string-match "run\s*(\"\\([^\"]*\\)\")" linestring))
+(defun vunit--match-line ()
+  "Simulate the testcase at the current line."
+  (let ((linestring (thing-at-point 'line t)))
+    (if (string-match vunit--regex-testcase linestring)
+        (match-string 1 linestring))))
 
 (defun vunit-toggle-flag (flag)
   "Remove or Add `FLAG' to the command and message back."
