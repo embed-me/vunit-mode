@@ -5,9 +5,10 @@ TEST_DIR=tests
 EMACS=emacs
 EMACS_CLEAN=-Q
 EMACS_BATCH=$(EMACS_CLEAN) --batch
-EMACS_LOAD_DEPENDENCIES=(setq package-enable-at-startup nil)    \
-			(defvar package-load-list '((lv t)      \
-						    (hydra t))) \
+EMACS_LOAD_DEPENDENCIES=(setq package-enable-at-startup nil)      \
+			(defvar package-load-list '((lv t)        \
+						    (hydra t)     \
+						    (el-mock t))) \
 			(package-initialize)
 
 all : build tests

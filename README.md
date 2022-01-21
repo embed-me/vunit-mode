@@ -59,16 +59,25 @@ following in your `~/.emacs` or `~/.emacs.d/init.el` init file.
 
 ## Usage
 
-The default keybinding to invoke vunit-mode is "C-x x".
+### Keybinding
+
+The default keybinding to invoke vunit-mode is `C-x x`.
 
 Keys highlighted in blue will execute the specified action and
 quit the vunit-mode command window.
 The ones marked in red, however, will add additional flags
 to the actions available in blue.
 
+### Menu Bar
+
+Once a VHDL file is loaded in the buffer, the `VUnit` Menu will
+appear in the Menu Bar. It is also possible to set flags and run
+tests without having to know any key bindings at all.
+
 ## Configuration
 
-As for now, it is possible to configure the following variables:
+As for now, it is possible to configure the following variables
+using `M-x Customize`:
 
 Path to the VUnit directory.
 > vunit-path

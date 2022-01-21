@@ -94,6 +94,12 @@
 
 ;;; internal variables
 
+(defconst vunit--flag-gui "--gui")
+(defconst vunit--flag-verbose "--verbose")
+(defconst vunit--flag-keep-compiling "--keep-compiling")
+(defconst vunit--flag-fail-fast "--fail-fast")
+(defconst vunit--flag-log-level "--log-level debug")
+
 (defvar vunit-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-x x") #'vunit-buffer-menu/body)
@@ -144,7 +150,7 @@
   (vunit--run ""))
 
 (defun vunit-sim-file ()
-  "Simulate currently opened file."
+  "Simulate currently opened file/buffer."
   (interactive)
   (vunit--run (format "*.%s.*" (file-name-base buffer-file-name))))
 
@@ -231,7 +237,6 @@
 (define-globalized-minor-mode global-vunit-mode
   vunit-mode vunit--turn-on)
 
-;;;###autoload
 (defun vunit--turn-on ()
   "Bind the variable `vunit-mode' to the `vhdl-mode'."
   (when (derived-mode-p 'vhdl-mode)
@@ -260,11 +265,67 @@ _x_: Clean             ^ ^              _t_: Cursor         _p_: Fail-Fast
   ("t" vunit-sim-cursor nil)
   ("a" vunit-sim-all  nil)
   ("s" vunit-sim      nil)
-  ("g" (vunit-toggle-flag "--gui") nil :color pink)
-  ("v" (vunit-toggle-flag "--verbose") nil :color pink)
-  ("e" (vunit-toggle-flag "--keep-compiling") nil :color pink)
-  ("p" (vunit-toggle-flag "--fail-fast") nil :color pink)
-  ("d" (vunit-toggle-flag "--log-level debug") nil :color pink))
+  ("g" (vunit-toggle-flag vunit--flag-gui) nil :color pink)
+  ("v" (vunit-toggle-flag vunit--flag-verbose) nil :color pink)
+  ("e" (vunit-toggle-flag vunit--flag-keep-compiling) nil :color pink)
+  ("p" (vunit-toggle-flag vunit--flag-fail-fast) nil :color pink)
+  ("d" (vunit-toggle-flag vunit--flag-log-level) nil :color pink))
+
+(easy-menu-define vunit-menu vunit-mode-map
+  "Vunit Menu"
+  '("Vunit"
+    :visible vunit-mode
+    ("Basic"
+     :help "Basic commands"
+     ["Open Script" vunit-open-script
+      :help "Open vunit script"]
+     ["List Tests" vunit-list
+      :help "List all testcases"]
+     ["List Files" vunit-files
+      :help "List all files in compile order"]
+     ["Clean" vunit-clean
+      :help "Clean output products"])
+    ("Compile"
+     :help "Compile commands"
+     ["All" vunit-compile
+      :help "Compile all modules"])
+    ("Simulate"
+     :help "Simulation commands"
+     ["All" vunit-sim-all
+      :help "Simulate all modules"]
+     ["Filter" vunit-sim
+      :help "Simulate with filter"]
+     ["Buffer" vunit-sim-file
+      :help "Simulate current file/buffer"]
+     ["Cursor" vunit-sim-cursor
+      :help "Simulate testcase at cursor"])
+    ("Flags"
+     :help "Flags set for the command to run"
+     [vunit--flag-gui
+      (vunit-toggle-flag vunit--flag-gui)
+      :help "Open GUI"
+      :style toggle
+      :selected (vunit--flag-enabled vunit--flag-gui)]
+     [vunit--flag-verbose
+      (vunit-toggle-flag vunit--flag-verbose)
+      :help "Verbose"
+      :style toggle
+      :selected (vunit--flag-enabled vunit--flag-verbose)]
+     [vunit--flag-keep-compiling
+      (vunit-toggle-flag vunit--flag-keep-compiling)
+      :help "Keep-Compiling"
+      :style toggle
+      :selected (vunit--flag-enabled vunit--flag-keep-compiling)]
+     [vunit--flag-fail-fast
+      (vunit-toggle-flag vunit--flag-fail-fast)
+      :help "Fail-fast"
+      :style toggle
+      :selected (vunit--flag-enabled vunit--flag-fail-fast)]
+     [vunit--flag-log-level
+      (vunit-toggle-flag vunit--flag-log-level)
+      :help "Log-level Debug"
+      :style toggle
+      :selected (vunit--flag-enabled vunit--flag-log-level)])))
 
 (provide 'vunit-mode)
 

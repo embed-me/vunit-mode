@@ -29,6 +29,7 @@
 
 (require 'ert)
 (require 'ert-x)
+(require 'el-mock)
 (require 'vunit-mode)
 (require 'hydra)
 
@@ -44,11 +45,27 @@
   (should (equal vunit-flags '())))
 
 (ert-deftest vunit-sim-cursor-check ()
-  (should (vunit--regex-testcase "run (\"foo\")"))
-  (should (vunit--regex-testcase "run(\"foo\")"))
-  (should (equal (vunit--regex-testcase "runF (\"foo\")") nil))
-  (should (equal (vunit--regex-testcase "whatever (\"foo\")") nil))
-  (should (equal (vunit--regex-testcase "whatever some more") nil)))
+  (should (with-mock
+           (stub thing-at-point => "run (\"foo\")")
+           (vunit--match-line)))
+  (should (with-mock
+           (stub thing-at-point => "run(\"foo\")")
+           (vunit--match-line)))
+  (should (equal
+           (with-mock
+           (stub thing-at-point => "runF (\"foo\")")
+           (vunit--match-line))
+           nil))
+  (should (equal
+           (with-mock
+           (stub thing-at-point => "whatever (\"foo\")")
+           (vunit--match-line))
+           nil))
+  (should (equal
+           (with-mock
+           (stub thing-at-point => "whatever some more")
+           (vunit--match-line))
+           nil)))
 
 (ert-deftest vunit-auto-scroll-check ()
   (custom-set-variables '(vunit-auto-scroll nil))
