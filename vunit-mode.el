@@ -152,7 +152,7 @@
 (defun vunit-sim-file ()
   "Simulate currently opened file/buffer."
   (interactive)
-  (vunit--run (format "*.%s.*" (file-name-base buffer-file-name))))
+  (vunit--run (format "'*.%s.*'" (file-name-base buffer-file-name))))
 
 (defun vunit-sim-cursor ()
   "Simulate testcase at cursor."
@@ -162,7 +162,7 @@
       (if (not (vunit--match-line))
           (re-search-backward vunit--regex-testcase nil 'noerror))
       (if (vunit--match-line)
-          (vunit--run (format "*.%s" (vunit--match-line)))
+          (vunit--run (format "'*.%s'" (vunit--match-line)))
         (message "No testcase...")))))
 
 (defun vunit--run (param)
