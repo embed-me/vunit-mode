@@ -112,6 +112,15 @@
 (defconst vunit--regex-testcase "run\s*(\"\\([^\"]*\\)\")"
   "Regular expression for testcases.")
 
+(defvar vunit--testcasestring ""
+  "Internal variable that is used to store the previous testcasestring.")
+
+(defconst vunit--temporary-buffer-name "*vunit-mode*"
+  "Name for temporary buffer for testcase selection.")
+
+(defconst vunit--testcase-library-begin "lib."
+  "Beginning of testcase identifiers after vunit list.")
+
 ;;; internal functions
 
 (defun vunit-open-script ()
@@ -144,6 +153,112 @@
   (interactive)
   (vunit--run (read-string "Testcase: ")))
 
+(defun vunit-sim-new-selection ()
+  "List all Testcases for Selcetion and run selected."
+  (interactive)
+  ;;check if the buffer already exists and kill it if it exists
+  (when (get-buffer-window vunit--temporary-buffer-name)
+    (switch-to-buffer vunit--temporary-buffer-name)
+    (kill-buffer-and-window))
+  (when (get-buffer vunit--temporary-buffer-name)
+    (kill-buffer vunit--temporary-buffer-name))
+  ;;create new buffer fo testcase selection
+  (get-buffer-create vunit--temporary-buffer-name)
+  (switch-to-buffer-other-window vunit--temporary-buffer-name)
+  (delete-all-overlays)
+  (let ((inhibit-read-only t))
+    (erase-buffer))
+  (kill-all-local-variables)
+  ;;get the testcases using vunit
+  (let* (beginpos endpos testcasestring testcases coding-str checkboxes (end nil) firstselectionpos)
+    (insert (shell-command-to-string (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
+					     vunit-python-executable
+					     (vunit--run-script-path)
+					     "--list"
+					     (vunit--run-outdir-path)
+					     vunit-num-threads
+					     (vunit--flag-to-string))))
+    (setq coding-str (symbol-name buffer-file-coding-system))
+    ;;make sure the output is unix encoded
+    (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
+      (set-buffer-file-coding-system 'unix))
+    (goto-char (point-min))
+    (while (and (not (looking-at vunit--testcase-library-begin))
+		(not end))
+      (forward-line)
+      (move-end-of-line 1)
+      (setq end (eobp))
+      (move-beginning-of-line 1))
+    (move-beginning-of-line 1)
+    (setq beginpos (point))
+    (while (and (looking-at vunit--testcase-library-begin)
+		(not (eq t end)))
+      (forward-line 1)
+      (move-end-of-line 1)
+      (setq end (eobp))
+      (move-beginning-of-line 1))
+    (if (looking-at vunit--testcase-library-begin)
+        (move-end-of-line 1))
+    (setq endpos (point))
+    (setq testcasestring (buffer-substring beginpos endpos))
+    (if (eq testcasestring "")
+	(error "No Testcases were found"))
+    (erase-buffer)
+    (setq testcases (split-string testcasestring "\n" t))
+    (setq inhibit-read-only nil)
+    (if (or (not testcases)
+	    (eq "" testcasestring))
+	(error "No Testcases were found"))
+    (remove-overlays)
+    ;; insert selection widgets for testcases
+    (widget-insert "Select Testcases below with mouse or Arrow Keys and <Ret>\n\n")
+    (setq firstselectionpos (point))
+    (dolist (testcase testcases)
+      (push (widget-create 'toggle
+			   :on (format "%s   %s" "[X]" testcase)
+			   :off (format "%s   %s" "[ ]" testcase))
+	    checkboxes)      )
+    (setq checkboxes (nreverse checkboxes))
+    (widget-insert "\n\n")
+    (widget-create 'push-button
+		   :notify (lambda (wid &rest ignore)
+			     (ignore wid)
+			     (ignore ignore)
+			     (let* ((first t) (cases testcases))
+			       (setq vunit--testcasestring "")
+			       (dolist (checkbox checkboxes)
+				 (when (widget-value checkbox)
+			           (when (not first)
+				     (setq vunit--testcasestring (concat vunit--testcasestring " ")))
+				   (setq vunit--testcasestring (concat vunit--testcasestring (format "\"%s\"" (car cases))))
+				   (setq first nil))
+				 (setq cases (cdr cases)))
+			       (when (get-buffer-window vunit--temporary-buffer-name)
+				 (switch-to-buffer vunit--temporary-buffer-name)
+				 (kill-buffer-and-window))
+			       (when (get-buffer vunit--temporary-buffer-name)
+				 (kill-buffer vunit--temporary-buffer-name))
+			       (unless (string-equal vunit--testcasestring "")
+				 (vunit--run vunit--testcasestring))))
+		   "Run Selected Testcases")
+    (widget-insert "\n")
+    (widget-create 'push-button
+		   :notify (lambda (wid &rest ignore)
+			     (ignore wid)
+			     (ignore ignore)
+			     (kill-buffer-and-window))
+		   "Exit Testcase Selection without executing Tests")
+    (use-local-map widget-keymap)
+    (widget-setup)
+    (goto-char firstselectionpos)))
+
+(defun vunit-sim-previous-selection ()
+  "Simulate the previously selected testcases if none were selected start new selection."
+  (interactive)
+  (if (string-equal vunit--testcasestring "")
+      (vunit-sim-new-selection)
+    (vunit--run vunit--testcasestring)))
+
 (defun vunit-sim-all ()
   "Simulate all modules."
   (interactive)
@@ -152,7 +267,31 @@
 (defun vunit-sim-file ()
   "Simulate currently opened file/buffer."
   (interactive)
-  (vunit--run (format "'*.%s.*'" (file-name-base buffer-file-name))))
+    (let* (entity entitypos entityendpos)
+    (save-excursion
+      ;; search for the first definition of an entity
+      (goto-char (point-min))
+      (while (setq entitypos (re-search-forward "entity" nil t))
+    	(move-beginning-of-line 1)
+  	(skip-chars-forward " \t\n\r\f")
+   	(if (looking-at "entity")
+   	    (progn
+	      ;; get the name of the entity
+    	      (goto-char entitypos)
+    	      (skip-chars-forward " \t\n\r\f")
+   	      (setq entitypos (point))
+	      (skip-chars-forward "[[:graph:]]")
+    	      (setq entityendpos (point))
+  	      (skip-chars-forward " \t\n\r\f")
+    	      (when (looking-at "is")
+    		(setq entity (buffer-substring entitypos entityendpos))
+    		;;end the loop now as we have found an entity
+    		(goto-char (point-max))))
+    	  (goto-char entitypos))))
+    (if (or (string-equal entity "")
+    	    (not entity))
+    	(error "No suitable Entity found")
+      (vunit--run (format "*.%s.*" entity)))))
 
 (defun vunit-sim-cursor ()
   "Simulate testcase at cursor."
@@ -247,13 +386,15 @@
   (:color blue
           :pre (vunit--flag-enabled-message))
   "
-^Basic^                ^Compile^        ^Simulate^          ^Flags^
+^Basic^                ^Compile^        ^Simulate^            ^Flags^
 ^^^^^^^-----------------------------------------------------------------------
-_o_: Open Script       _c_: All         _a_: All            _g_: GUI
-_r_: List Tests        ^ ^              _s_: Filter         _v_: Verbose
-_f_: List Files        ^ ^              _b_: Buffer         _e_: Keep-Compiling
-_x_: Clean             ^ ^              _t_: Cursor         _p_: Fail-Fast
-^ ^                    ^ ^              ^ ^                 _d_: Debug
+_o_: Open Script       _c_: All         _a_: All              _g_: GUI
+_r_: List Tests        ^ ^              _s_: Filter           _v_: Verbose
+_f_: List Files        ^ ^              _b_: Buffer           _e_: Keep-Compiling
+_x_: Clean             ^ ^              _t_: Cursor           _p_: Fail-Fast
+^ ^                    ^ ^              _n_: New Selection    _d_: Debug
+^ ^                    ^ ^              _l_: Last Selection   ^ ^
+^ ^                    ^ ^              ^ ^                   ^ ^
 ^ ^
 "
   ("o" vunit-open-script nil)
@@ -263,6 +404,8 @@ _x_: Clean             ^ ^              _t_: Cursor         _p_: Fail-Fast
   ("x" vunit-clean    nil)
   ("b" vunit-sim-file nil)
   ("t" vunit-sim-cursor nil)
+  ("n" vunit-sim-new-selection nil)
+  ("l" vunit-sim-previous-selection nil)
   ("a" vunit-sim-all  nil)
   ("s" vunit-sim      nil)
   ("g" (vunit-toggle-flag vunit--flag-gui) nil :color pink)
@@ -295,6 +438,10 @@ _x_: Clean             ^ ^              _t_: Cursor         _p_: Fail-Fast
       :help "Simulate all modules"]
      ["Filter" vunit-sim
       :help "Simulate with filter"]
+     ["New Selection" vunit-sim-new-selection
+      :help "Simulate with visual Testcaseselection"]
+     ["Last Selection" vunit-sim-previous-selection
+      :help "Simulate previously selected testcase or new selection if none were selected"]
      ["Buffer" vunit-sim-file
       :help "Simulate current file/buffer"]
      ["Cursor" vunit-sim-cursor
