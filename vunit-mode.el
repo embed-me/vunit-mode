@@ -109,11 +109,11 @@
 (defvar vunit-flags '()
   "Additional flags for the python script.")
 
-(defconst vunit--regex-testcase "run\s*(\"\\([^\"]*\\)\")"
-  "Regular expression for testcases.")
-
 (defvar vunit--testcasestring ""
   "Internal variable that is used to store the previous testcasestring.")
+
+(defconst vunit--regex-testcase "run\s*(\"\\([^\"]*\\)\")"
+  "Regular expression for testcases.")
 
 (defconst vunit--temporary-buffer-name "*vunit-mode*"
   "Name for temporary buffer for testcase selection.")
@@ -171,13 +171,8 @@
   (kill-all-local-variables)
   ;;get the testcases using vunit
   (let* (beginpos endpos testcasestring testcases coding-str checkboxes (end nil) firstselectionpos)
-    (insert (shell-command-to-string (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
-					     vunit-python-executable
-					     (vunit--run-script-path)
-					     "--list"
-					     (vunit--run-outdir-path)
-					     vunit-num-threads
-					     (vunit--flag-to-string))))
+    (insert (shell-command-to-string (vunit--format-call-string "--list")))
+    (setq vunit--testcasestring "")
     (setq coding-str (symbol-name buffer-file-coding-system))
     ;;make sure the output is unix encoded
     (when (string-match "-\\(?:dos\\|mac\\)$" coding-str)
@@ -189,7 +184,6 @@
       (move-end-of-line 1)
       (setq end (eobp))
       (move-beginning-of-line 1))
-    (move-beginning-of-line 1)
     (setq beginpos (point))
     (while (and (looking-at vunit--testcase-library-begin)
 		(not (eq t end)))
@@ -202,16 +196,20 @@
     (setq endpos (point))
     (setq testcasestring (buffer-substring beginpos endpos))
     (if (eq testcasestring "")
-	(error "No Testcases were found"))
+	(progn
+	  (vunit--kill-buffer-and-window)
+	  (error "No Testcases were found")))
     (erase-buffer)
     (setq testcases (split-string testcasestring "\n" t))
     (setq inhibit-read-only nil)
     (if (or (not testcases)
 	    (eq "" testcasestring))
-	(error "No Testcases were found"))
+	(progn
+	  (vunit--kill-buffer-and-window)
+	  (error "No Testcases were found")))
     (remove-overlays)
     ;; insert selection widgets for testcases
-    (widget-insert "Select Testcases below with mouse or Arrow Keys and <Ret>\n\n")
+    (widget-insert "Select Testcases below\n\n")
     (setq firstselectionpos (point))
     (dolist (testcase testcases)
       (push (widget-create 'toggle
@@ -233,11 +231,7 @@
 				   (setq vunit--testcasestring (concat vunit--testcasestring (format "\"%s\"" (car cases))))
 				   (setq first nil))
 				 (setq cases (cdr cases)))
-			       (when (get-buffer-window vunit--temporary-buffer-name)
-				 (switch-to-buffer vunit--temporary-buffer-name)
-				 (kill-buffer-and-window))
-			       (when (get-buffer vunit--temporary-buffer-name)
-				 (kill-buffer vunit--temporary-buffer-name))
+			       (vunit--kill-buffer-and-window)
 			       (unless (string-equal vunit--testcasestring "")
 				 (vunit--run vunit--testcasestring))))
 		   "Run Selected Testcases")
@@ -247,10 +241,11 @@
 			     (ignore wid)
 			     (ignore ignore)
 			     (kill-buffer-and-window))
-		   "Exit Testcase Selection without executing Tests")
+		   "Exit")
     (use-local-map widget-keymap)
     (widget-setup)
-    (goto-char firstselectionpos)))
+    (goto-char firstselectionpos)
+    (forward-char 1)))
 
 (defun vunit-sim-previous-selection ()
   "Simulate the previously selected testcases if none were selected start new selection."
@@ -304,15 +299,28 @@
           (vunit--run (format "'*.%s'" (vunit--match-line)))
         (message "No testcase...")))))
 
-(defun vunit--run (param)
-  "Run VUnit python script with `PARAM'."
-  (compile (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
+(defun vunit--format-call-string (param)
+  "Format the VUnit call-string with `PARAM'."
+  (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
                    vunit-python-executable
                    (vunit--run-script-path)
                    param
                    (vunit--run-outdir-path)
                    vunit-num-threads
-                   (vunit--flag-to-string))))
+                   (vunit--flag-to-string)))
+
+
+(defun vunit--kill-buffer-and-window ()
+  "Delete the temporary Buffer and window if present."
+  (when (get-buffer-window vunit--temporary-buffer-name)
+    (switch-to-buffer vunit--temporary-buffer-name)
+    (kill-buffer-and-window))
+  (when (get-buffer vunit--temporary-buffer-name)
+    (kill-buffer vunit--temporary-buffer-name)))
+
+(defun vunit--run (param)
+  "Run VUnit python script with `PARAM'."
+  (compile (vunit--format-call-string param)))
 
 (defun vunit--run-script-path ()
   "Full absolute path to the run script."
@@ -386,15 +394,15 @@
   (:color blue
           :pre (vunit--flag-enabled-message))
   "
-^Basic^                ^Compile^        ^Simulate^            ^Flags^
-^^^^^^^-----------------------------------------------------------------------
-_o_: Open Script       _c_: All         _a_: All              _g_: GUI
-_r_: List Tests        ^ ^              _s_: Filter           _v_: Verbose
-_f_: List Files        ^ ^              _b_: Buffer           _e_: Keep-Compiling
-_x_: Clean             ^ ^              _t_: Cursor           _p_: Fail-Fast
-^ ^                    ^ ^              _n_: New Selection    _d_: Debug
-^ ^                    ^ ^              _l_: Last Selection   ^ ^
-^ ^                    ^ ^              ^ ^                   ^ ^
+^Basic^                ^Compile^        ^Simulate^                 ^Flags^
+^^^^^^^-------------------------------------------------------------------------------
+_o_: Open Script       _c_: All         _a_: All                   _g_: GUI
+_r_: List Tests        ^ ^              _s_: Filter                _v_: Verbose
+_f_: List Files        ^ ^              _b_: Buffer                _e_: Keep-Compiling
+_x_: Clean             ^ ^              _t_: Cursor                _p_: Fail-Fast
+^ ^                    ^ ^              _n_: New Selection         _d_: Debug
+^ ^                    ^ ^              _l_: Previous  Selection   ^ ^
+^ ^                    ^ ^              ^ ^                        ^ ^
 ^ ^
 "
   ("o" vunit-open-script nil)
