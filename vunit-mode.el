@@ -248,7 +248,8 @@
     (forward-char 1)))
 
 (defun vunit-sim-previous-selection ()
-  "Simulate the previously selected testcases if none were selected start new selection."
+  "Simulate the previously selected testcases.
+If none were selected start new selection."
   (interactive)
   (if (string-equal vunit--testcasestring "")
       (vunit-sim-new-selection)
@@ -485,3 +486,9 @@ _x_: Clean             ^ ^              _t_: Cursor                _p_: Fail-Fas
 (provide 'vunit-mode)
 
 ;;; vunit-mode.el ends here
+
+;; Silence all the hydra docstring byte-compiler warnings:
+;;
+;; Local Variables:
+;; byte-compile-warnings: (not docstrings)
+;; End:
