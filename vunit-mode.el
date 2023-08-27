@@ -81,6 +81,16 @@
   :group 'vunit
   :type 'integer)
 
+(defcustom vunit-simulator nil
+  "Simulator to be used by VUnit process.
+If set to nil choose automatically the first available in the $PATH."
+  :group 'vunit
+  :type '(choice (const :tag "Automatic"  nil)
+                 (const :tag "ActiveHDL"  "activehdl")
+                 (const :tag "RivieraPro" "rivierapro")
+                 (const :tag "GHDL"       "ghdl")
+                 (const :tag "ModelSim"   "modelsim")))
+
 ;; Create a "special" variable so that it is dynamically
 ;; bound (even if `lexical-binding' is t)
 (defvar compilation-scroll-output)
@@ -302,13 +312,14 @@ If none were selected start new selection."
 
 (defun vunit--format-call-string (param)
   "Format the VUnit call-string with `PARAM'."
-  (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
-                   vunit-python-executable
-                   (vunit--run-script-path)
-                   param
-                   (vunit--run-outdir-path)
-                   vunit-num-threads
-                   (vunit--flag-to-string)))
+  (format "%s%s %s %s --output-path %s --no-color --num-threads %d %s"
+          (if vunit-simulator (concat "VUNIT_SIMULATOR=" vunit-simulator " ") "")
+          vunit-python-executable
+          (vunit--run-script-path)
+          param
+          (vunit--run-outdir-path)
+          vunit-num-threads
+          (vunit--flag-to-string)))
 
 
 (defun vunit--kill-buffer-and-window ()
