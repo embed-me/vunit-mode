@@ -56,7 +56,7 @@
 
 ;;; user setable variables
 
-(defcustom vunit-python-executable "python"
+(defcustom vunit-python-executable (executable-find "python")
   "The Python executable used by VUnit."
   :group 'vunit
   :type 'string)
@@ -76,7 +76,7 @@
   :group 'vunit
   :type 'string)
 
-(defcustom vunit-num-threads 1
+(defcustom vunit-num-threads (num-processors)
   "Number of threads to use in parallel."
   :group 'vunit
   :type 'integer)
