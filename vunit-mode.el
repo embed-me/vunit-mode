@@ -76,7 +76,7 @@
   :group 'vunit
   :type 'string)
 
-(defcustom vunit-num-threads (num-processors)
+(defcustom vunit-num-threads 1
   "Number of threads to use in parallel."
   :group 'vunit
   :type 'integer)
