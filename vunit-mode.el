@@ -56,7 +56,7 @@
 
 ;;; user setable variables
 
-(defcustom vunit-python-executable "python"
+(defcustom vunit-python-executable (executable-find "python")
   "The Python executable used by VUnit."
   :group 'vunit
   :type 'string)
@@ -80,6 +80,16 @@
   "Number of threads to use in parallel."
   :group 'vunit
   :type 'integer)
+
+(defcustom vunit-simulator nil
+  "Simulator to be used by VUnit process.
+If set to nil choose automatically the first available in the $PATH."
+  :group 'vunit
+  :type '(choice (const :tag "Automatic"  nil)
+                 (const :tag "ActiveHDL"  "activehdl")
+                 (const :tag "RivieraPro" "rivierapro")
+                 (const :tag "GHDL"       "ghdl")
+                 (const :tag "ModelSim"   "modelsim")))
 
 ;; Create a "special" variable so that it is dynamically
 ;; bound (even if `lexical-binding' is t)
@@ -179,14 +189,14 @@
       (set-buffer-file-coding-system 'unix))
     (goto-char (point-min))
     (while (and (not (looking-at vunit--testcase-library-begin))
-		(not end))
+                (not end))
       (forward-line)
       (move-end-of-line 1)
       (setq end (eobp))
       (move-beginning-of-line 1))
     (setq beginpos (point))
     (while (and (looking-at vunit--testcase-library-begin)
-		(not (eq t end)))
+                (not (eq t end)))
       (forward-line 1)
       (move-end-of-line 1)
       (setq end (eobp))
@@ -196,59 +206,60 @@
     (setq endpos (point))
     (setq testcasestring (buffer-substring beginpos endpos))
     (if (eq testcasestring "")
-	(progn
-	  (vunit--kill-buffer-and-window)
-	  (error "No Testcases were found")))
+        (progn
+          (vunit--kill-buffer-and-window)
+          (error "No Testcases were found")))
     (erase-buffer)
     (setq testcases (split-string testcasestring "\n" t))
     (setq inhibit-read-only nil)
     (if (or (not testcases)
-	    (eq "" testcasestring))
-	(progn
-	  (vunit--kill-buffer-and-window)
-	  (error "No Testcases were found")))
+            (eq "" testcasestring))
+        (progn
+          (vunit--kill-buffer-and-window)
+          (error "No Testcases were found")))
     (remove-overlays)
     ;; insert selection widgets for testcases
     (widget-insert "Select Testcases below\n\n")
     (setq firstselectionpos (point))
     (dolist (testcase testcases)
       (push (widget-create 'toggle
-			   :on (format "%s   %s" "[X]" testcase)
-			   :off (format "%s   %s" "[ ]" testcase))
-	    checkboxes)      )
+                           :on (format "%s   %s" "[X]" testcase)
+                           :off (format "%s   %s" "[ ]" testcase))
+            checkboxes)      )
     (setq checkboxes (nreverse checkboxes))
     (widget-insert "\n\n")
     (widget-create 'push-button
-		   :notify (lambda (wid &rest ignore)
-			     (ignore wid)
-			     (ignore ignore)
-			     (let* ((first t) (cases testcases))
-			       (setq vunit--testcasestring "")
-			       (dolist (checkbox checkboxes)
-				 (when (widget-value checkbox)
-			           (when (not first)
-				     (setq vunit--testcasestring (concat vunit--testcasestring " ")))
-				   (setq vunit--testcasestring (concat vunit--testcasestring (format "\"%s\"" (car cases))))
-				   (setq first nil))
-				 (setq cases (cdr cases)))
-			       (vunit--kill-buffer-and-window)
-			       (unless (string-equal vunit--testcasestring "")
-				 (vunit--run vunit--testcasestring))))
-		   "Run Selected Testcases")
+                   :notify (lambda (wid &rest ignore)
+                             (ignore wid)
+                             (ignore ignore)
+                             (let* ((first t) (cases testcases))
+                               (setq vunit--testcasestring "")
+                               (dolist (checkbox checkboxes)
+                                 (when (widget-value checkbox)
+                                   (when (not first)
+                                     (setq vunit--testcasestring (concat vunit--testcasestring " ")))
+                                   (setq vunit--testcasestring (concat vunit--testcasestring (format "\"%s\"" (car cases))))
+                                   (setq first nil))
+                                 (setq cases (cdr cases)))
+                               (vunit--kill-buffer-and-window)
+                               (unless (string-equal vunit--testcasestring "")
+                                 (vunit--run vunit--testcasestring))))
+                   "Run Selected Testcases")
     (widget-insert "\n")
     (widget-create 'push-button
-		   :notify (lambda (wid &rest ignore)
-			     (ignore wid)
-			     (ignore ignore)
-			     (kill-buffer-and-window))
-		   "Exit")
+                   :notify (lambda (wid &rest ignore)
+                             (ignore wid)
+                             (ignore ignore)
+                             (kill-buffer-and-window))
+                   "Exit")
     (use-local-map widget-keymap)
     (widget-setup)
     (goto-char firstselectionpos)
     (forward-char 1)))
 
 (defun vunit-sim-previous-selection ()
-  "Simulate the previously selected testcases if none were selected start new selection."
+  "Simulate the previously selected testcases.
+If none were selected start new selection."
   (interactive)
   (if (string-equal vunit--testcasestring "")
       (vunit-sim-new-selection)
@@ -267,25 +278,25 @@
       ;; search for the first definition of an entity
       (goto-char (point-min))
       (while (setq entitypos (re-search-forward "entity" nil t))
-    	(move-beginning-of-line 1)
-  	(skip-chars-forward " \t\n\r\f")
-   	(if (looking-at "entity")
-   	    (progn
-	      ;; get the name of the entity
-    	      (goto-char entitypos)
-    	      (skip-chars-forward " \t\n\r\f")
-   	      (setq entitypos (point))
-	      (skip-chars-forward "[[:graph:]]")
-    	      (setq entityendpos (point))
-  	      (skip-chars-forward " \t\n\r\f")
-    	      (when (looking-at "is")
-    		(setq entity (buffer-substring entitypos entityendpos))
-    		;;end the loop now as we have found an entity
-    		(goto-char (point-max))))
-    	  (goto-char entitypos))))
+        (move-beginning-of-line 1)
+        (skip-chars-forward " \t\n\r\f")
+        (if (looking-at "entity")
+            (progn
+              ;; get the name of the entity
+              (goto-char entitypos)
+              (skip-chars-forward " \t\n\r\f")
+              (setq entitypos (point))
+              (skip-chars-forward "[[:graph:]]")
+              (setq entityendpos (point))
+              (skip-chars-forward " \t\n\r\f")
+              (when (looking-at "is")
+                (setq entity (buffer-substring entitypos entityendpos))
+                ;;end the loop now as we have found an entity
+                (goto-char (point-max))))
+          (goto-char entitypos))))
     (if (or (string-equal entity "")
-    	    (not entity))
-    	(error "No suitable Entity found")
+            (not entity))
+        (error "No suitable Entity found")
       (vunit--run (format "*.%s.*" entity)))))
 
 (defun vunit-sim-cursor ()
@@ -301,13 +312,14 @@
 
 (defun vunit--format-call-string (param)
   "Format the VUnit call-string with `PARAM'."
-  (format "%s %s %s --output-path %s --no-color --num-threads %d %s"
-                   vunit-python-executable
-                   (vunit--run-script-path)
-                   param
-                   (vunit--run-outdir-path)
-                   vunit-num-threads
-                   (vunit--flag-to-string)))
+  (format "%s%s %s %s --output-path %s --no-color --num-threads %d %s"
+          (if vunit-simulator (concat "VUNIT_SIMULATOR=" vunit-simulator " ") "")
+          vunit-python-executable
+          (vunit--run-script-path)
+          param
+          (vunit--run-outdir-path)
+          vunit-num-threads
+          (vunit--flag-to-string)))
 
 
 (defun vunit--kill-buffer-and-window ()
@@ -485,3 +497,9 @@ _x_: Clean             ^ ^              _t_: Cursor                _p_: Fail-Fas
 (provide 'vunit-mode)
 
 ;;; vunit-mode.el ends here
+
+;; Silence all the hydra docstring byte-compiler warnings:
+;;
+;; Local Variables:
+;; byte-compile-warnings: (not docstrings)
+;; End:
