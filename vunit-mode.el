@@ -332,7 +332,8 @@ If none were selected start new selection."
 
 (defun vunit--run (param)
   "Run VUnit python script with `PARAM'."
-  (compile (vunit--format-call-string param)))
+  (let ((default-directory (or vunit-path (vunit-get-path))))
+    (compile (vunit--format-call-string param))))
 
 (defun vunit--run-script-path ()
   "Full absolute path to the run script."
