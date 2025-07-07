@@ -56,6 +56,11 @@
 
 ;;; user setable variables
 
+(defcustom vunit-extra-flags "--no-color"
+  "Any extra flags to append to VUnit call string."
+  :group 'vunit
+  :type 'string)
+
 (defcustom vunit-python-executable (executable-find "python")
   "The Python executable used by VUnit."
   :group 'vunit
@@ -312,14 +317,15 @@ If none were selected start new selection."
 
 (defun vunit--format-call-string (param)
   "Format the VUnit call-string with `PARAM'."
-  (format "%s%s %s %s --output-path %s --no-color --num-threads %d %s"
+  (format "%s%s %s %s --output-path %s --num-threads %d %s %s"
           (if vunit-simulator (concat "VUNIT_SIMULATOR=" vunit-simulator " ") "")
           vunit-python-executable
           (vunit--run-script-path)
           param
           (vunit--run-outdir-path)
           vunit-num-threads
-          (vunit--flag-to-string)))
+          (vunit--flag-to-string)
+          vunit-extra-flags))
 
 
 (defun vunit--kill-buffer-and-window ()
