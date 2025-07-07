@@ -339,13 +339,13 @@ If none were selected start new selection."
   "Full absolute path to the run script."
   (when (not vunit-path)
     (vunit-get-path))
-  (format "%s%s" vunit-path vunit-run-script))
+  (expand-file-name vunit-run-script vunit-path))
 
 (defun vunit--run-outdir-path ()
   "Full absolute path to the output directory."
   (when (not vunit-path)
     (vunit-get-path))
-  (format "%s%s" vunit-path vunit-run-outdir))
+  (expand-file-name vunit-run-outdir vunit-path))
 
 (defun vunit-get-path ()
   "Parse for VUnit directory."
