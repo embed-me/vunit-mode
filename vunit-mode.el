@@ -297,7 +297,7 @@ If none were selected start new selection."
     (if (or (string-equal entity "")
             (not entity))
         (error "No suitable Entity found")
-      (vunit--run (format "*.%s.*" entity)))))
+      (vunit--run (format "'*.%s.*'" entity)))))
 
 (defun vunit-sim-cursor ()
   "Simulate testcase at cursor."
@@ -332,7 +332,8 @@ If none were selected start new selection."
 
 (defun vunit--run (param)
   "Run VUnit python script with `PARAM'."
-  (compile (vunit--format-call-string param)))
+  (let ((default-directory (or vunit-path (vunit-get-path))))
+    (compile (vunit--format-call-string param))))
 
 (defun vunit--run-script-path ()
   "Full absolute path to the run script."
