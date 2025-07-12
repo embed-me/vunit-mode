@@ -408,7 +408,7 @@ If none were selected start new selection."
   (when (derived-mode-p 'vhdl-mode)
     (vunit-mode 1)))
 
-;;;###autoload
+;;;###autoload(autoload 'vunit-buffer-menu/body "vunit-mode")
 (defhydra vunit-buffer-menu
   (:color blue
           :pre (vunit--flag-enabled-message))
