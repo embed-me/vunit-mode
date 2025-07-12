@@ -47,6 +47,7 @@
 
 ;;; Code:
 
+;;;###autoload
 (require 'hydra)
 
 (defgroup vunit nil
